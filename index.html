@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jogo de Escolhas</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #ffe4e1, #f5f5dc);
+      min-height: 100vh;
+    }
+
+    .screen {
+      display: none;
+      padding: 20px;
+      min-height: 100vh;
+      box-sizing: border-box;
+    }
+
+    .screen.active {
+      display: block;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 15px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+      padding: 30px;
+      position: relative;
+    }
+
+    h1 {
+      text-align: center;
+      color: #d63384;
+      margin-bottom: 30px;
+      position: relative;
+      padding-bottom: 10px;
+    }
+
+    h1:after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 80px;
+      height: 3px;
+      background: #d63384;
+      border-radius: 3px;
+    }
+
+    .options {
+      margin-bottom: 20px;
+    }
+
+    .option-item, .editable-option-item {
+      display: flex;
+      align-items: center;
+      margin: 12px 0;
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 10px 15px;
+      transition: all 0.2s ease;
+    }
+
+    .option-item:hover, .editable-option-item:hover {
+      background: #f0f0f0;
+      transform: translateX(5px);
+    }
+
+    .options label {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      font-size: 1.1em;
+      cursor: pointer;
+    }
+
+    .options input[type="checkbox"] {
+      margin-right: 15px;
+      transform: scale(1.2);
+      cursor: pointer;
+    }
+
+    .counter {
+      text-align: center;
+      margin: 20px 0;
+      font-size: 18px;
+      font-weight: 500;
+      color: #6c757d;
+    }
+
+    .button-group {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 30px;
+    }
+    .centered-button-group {
+      display: flex;
+      justify-content: center;
+      margin-top: 30px;
+      gap: 15px; /* Espaço entre os botões */
+    }
+
+
+    .btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 30px;
+      font-size: 1em;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .btn-start {
+      background: #d63384;
+      color: white;
+      padding: 15px 40px;
+      font-size: 1.2em;
+      box-shadow: 0 4px 15px rgba(214, 51, 132, 0.3);
+    }
+
+    .btn-start:hover {
+      background: #c62b7a;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(214, 51, 132, 0.4);
+    }
+
+    .btn-confirm {
+      background: #28a745;
+      color: white;
+      box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+    }
+
+    .btn-confirm:hover {
+      background: #218838;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+    }
+
+    .btn-edit-options, .btn-save-options { /* Renomeado para evitar conflito com .btn-edit usado antes */
+      background: #ffc107;
+      color: #343a40;
+      box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3);
+    }
+    .btn-edit-options:hover, .btn-save-options:hover {
+      background: #e0a800;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(255, 193, 7, 0.4);
+    }
+    .btn-cancel-edit {
+        background: #6c757d;
+        color: white;
+    }
+    .btn-cancel-edit:hover {
+        background: #5a6268;
+    }
+
+
+    .btn-result {
+      background: #007bff;
+      color: white;
+      box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
+    }
+
+    .btn-result:hover {
+      background: #0069d9;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 123, 255, 0.4);
+    }
+    .btn-add, .btn-remove {
+        padding: 8px 12px;
+        font-size: 0.9em;
+        margin-left: 10px;
+    }
+    .btn-add {
+        background-color: #28a745;
+        color: white;
+    }
+    .btn-remove {
+        background-color: #dc3545;
+        color: white;
+    }
+
+    .proceed-container {
+      display: none;
+      text-align: center;
+      margin-top: 30px;
+    }
+
+    .proceed-container .btn {
+      margin: 0 10px;
+    }
+
+    .results-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      margin-top: 30px;
+    }
+
+    .result-card {
+      background: white;
+      border-radius: 15px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+      overflow: hidden;
+      transition: transform 0.3s ease;
+    }
+
+    .result-card:hover {
+      transform: translateY(-5px);
+    }
+
+    .card-header {
+      background: #fff8e5;
+      padding: 20px;
+      text-align: center;
+      border-bottom: 1px solid rgba(0,0,0,0.1);
+    }
+
+    .card-header h2 {
+      color: #856404;
+      font-size: 24px;
+      margin: 0;
+    }
+
+    .card-body {
+      padding: 20px;
+    }
+
+    .choice-item {
+      display: flex;
+      align-items: center;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      background: #f8f9fa;
+      transition: all 0.2s ease;
+    }
+
+    .choice-item:hover {
+      background: #f0f0f0;
+      transform: scale(1.02);
+    }
+
+    .choice-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .emoji {
+      font-size: 28px;
+      margin-right: 15px;
+      flex-shrink: 0;
+    }
+
+    .choice-text {
+      font-size: 16px;
+      font-weight: 500;
+      color: #333;
+    }
+
+    .error-message, .success-message {
+      font-weight: 500;
+      text-align: center;
+      margin-top: 10px;
+      padding: 8px;
+      border-radius: 5px;
+    }
+    .error-message {
+        color: #721c24;
+        background-color: #f8d7da;
+        border: 1px solid #f5c6cb;
+    }
+    .success-message {
+        color: #155724;
+        background-color: #d4edda;
+        border: 1px solid #c3e6cb;
+    }
+
+
+    .restart-container {
+      text-align: center;
+      margin-top: 40px;
+    }
+
+    .blur-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(5px);
+      -webkit-backdrop-filter: blur(5px);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 10;
+      border-radius: 15px;
+    }
+
+    .next-player-btn {
+      background: #d63384;
+      color: white;
+      padding: 18px 40px;
+      font-size: 1.3em;
+      border: none;
+      border-radius: 30px;
+      box-shadow: 0 8px 25px rgba(214, 51, 132, 0.5);
+      cursor: pointer;
+      animation: pulse 2s infinite;
+    }
+    
+    .results-btn {
+      background: #007bff;
+      box-shadow: 0 8px 25px rgba(0, 123, 255, 0.5);
+    }
+    
+    .results-btn:hover {
+      box-shadow: 0 12px 30px rgba(0, 123, 255, 0.7);
+    }
+    
+    .choice-item.matching {
+      background: #e8f5e9;
+      border: 2px solid #4caf50;
+      position: relative;
+    }
+
+    input[type="text"], input[type="password"] {
+        width: calc(100% - 22px); /* Ajuste para padding */
+        padding: 10px;
+        margin-bottom: 10px;
+        border: 1px solid #ced4da;
+        border-radius: 5px;
+        font-size: 1em;
+    }
+    .editable-option-item input[type="text"] {
+        flex-grow: 1;
+        margin-bottom: 0;
+    }
+    .add-option-container {
+        display: flex;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    .add-option-container input[type="text"] {
+        flex-grow: 1;
+        margin-right: 10px;
+        margin-bottom: 0;
+    }
+
+
+    @keyframes pulse {
+      0% {
+        transform: scale(1);
+        box-shadow: 0 8px 25px rgba(214, 51, 132, 0.5);
+      }
+      50% {
+        transform: scale(1.05);
+        box-shadow: 0 12px 30px rgba(214, 51, 132, 0.7);
+      }
+      100% {
+        transform: scale(1);
+        box-shadow: 0 8px 25px rgba(214, 51, 132, 0.5);
+      }
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        padding: 20px;
+        margin: 10px;
+      }
+      
+      .results-grid {
+        grid-template-columns: 1fr;
+        gap: 30px;
+      }
+      
+      .proceed-container .btn {
+        margin: 10px 5px;
+      }
+      .add-option-container {
+        flex-direction: column;
+      }
+      .add-option-container input[type="text"] {
+        margin-right: 0;
+        margin-bottom: 10px;
+        width: 100%;
+      }
+      .add-option-container button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div id="startScreen" class="screen active">
+  <div class="container">
+    <h1>Jogo das Escolhas</h1>
+    <p style="text-align: center; margin-bottom: 30px; color: #6c757d;">Escolha opções românticas para você e seu par! Descubra o que cada um deseja.</p>
+    <div class="centered-button-group">
+        <button class="btn btn-start" onclick="showScreen('womanScreen')">INICIAR</button>
+        <button class="btn btn-edit-options" onclick="showEditOptionsScreen()">Editar Opções</button>
+    </div>
+  </div>
+</div>
+
+<div id="womanScreen" class="screen">
+  <div class="container">
+    <h1>O que você me daria:</h1>
+    <p style="text-align: center; margin-bottom: 20px; color: #6c757d;">Selecione 5 opções que expressam seus sentimentos:</p>
+    <div class="options" id="womanOptions"></div>
+    <div class="counter" id="womanCount">0/5 selecionadas</div>
+    <div class="error-message" id="womanError"></div>
+    <div class="button-group" id="womanButtonGroup">
+      <button class="btn btn-confirm" onclick="confirmSelection('woman')">Confirmar Escolhas</button>
+    </div>
+    <div class="blur-overlay" id="womanBlurOverlay">
+      <button class="next-player-btn" onclick="showScreen('manScreen')">VEZ DO HOMEM</button>
+    </div>
+  </div>
+</div>
+
+<div id="manScreen" class="screen">
+  <div class="container">
+    <h1>Escolhas do Homem</h1>
+    <p style="text-align: center; margin-bottom: 20px; color: #6c757d;">Selecione 5 opções que expressam seus sentimentos:</p>
+    <div class="options" id="manOptions"></div>
+    <div class="counter" id="manCount">0/5 selecionadas</div>
+    <div class="error-message" id="manError"></div>
+    <div class="button-group" id="manButtonGroup">
+      <button class="btn btn-confirm" onclick="confirmSelection('man')">Confirmar Escolhas</button>
+    </div>
+    <div class="blur-overlay" id="manBlurOverlay">
+      <button class="next-player-btn results-btn" onclick="showResults()">VER RESULTADOS</button>
+    </div>
+  </div>
+</div>
+
+<div id="resultScreen" class="screen">
+  <div class="container">
+    <h1>Resultados</h1>
+    <div class="results-grid">
+      <div class="result-card">
+        <div class="card-header">
+          <h2>Escolhas da Mulher</h2>
+        </div>
+        <div class="card-body" id="womanResults"></div>
+      </div>
+      <div class="result-card">
+        <div class="card-header">
+          <h2>Escolhas do Homem</h2>
+        </div>
+        <div class="card-body" id="manResults"></div>
+      </div>
+    </div>
+    <div class="restart-container">
+      <button class="btn btn-result" onclick="restartGame()">Jogar Novamente</button>
+    </div>
+  </div>
+</div>
+
+<div id="editOptionsScreen" class="screen">
+  <div class="container">
+    <h1>Editar Opções</h1>
+    <p style="text-align: center; margin-bottom: 20px; color: #6c757d;">Adicione, remova ou modifique as opções do jogo.</p>
+    
+    <div id="editableOptionsContainer">
+      <!-- Opções editáveis serão renderizadas aqui -->
+    </div>
+
+    <div class="add-option-container">
+      <input type="text" id="newOptionInput" placeholder="Digite a nova opção">
+      <button class="btn btn-add" onclick="addOptionToList()">Adicionar</button>
+    </div>
+    
+    <hr style="margin: 20px 0;">
+
+    <p style="text-align:center; color: #6c757d;">Digite a senha para salvar:</p>
+    <input type="password" id="adminPassword" placeholder="Senha">
+    <div class="error-message" id="editPasswordError" style="display:none;"></div>
+    <div class="success-message" id="editSuccessMessage" style="display:none;"></div>
+
+
+    <div class="centered-button-group">
+      <button class="btn btn-save-options" onclick="saveEditedOptions()">Salvar Alterações</button>
+      <button class="btn btn-cancel-edit" onclick="cancelEditOptions()">Voltar</button>
+    </div>
+  </div>
+</div>
+
+
+<script>
+  let options = [ // Alterado de const para let
+    "💚 te pegaria agora",
+    "❤️ pegaria todo dia",
+    "💛 penso no caso",
+    "💜 beijaria o seu corpo todo",
+    "🤗 Te abraçaria",
+    "👅 Chupo sua língua",
+    "❤️ Namorava com vc",
+    "💙 Te mordia todinho(a)",
+    "🍏 te adoro",
+    "🥰 amor escondido",
+    "👯‍♀️ amizade colorida",
+    "💋 te beijaria",
+    "👻 Te atormentaria",
+    "🎁 Te dava um presente"
+  ];
+
+  let selections = {
+    woman: [],
+    man: []
+  };
+
+  let confirmed = {
+    woman: false,
+    man: false
+  };
+
+  const ADMIN_PASSWORD = "123"; // Senha para salvar
+
+  function extractEmoji(text) {
+    const emojiRegex = /([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|\uD83E[\uDD00-\uDFFF])/;
+    const match = text.match(emojiRegex);
+    return match ? match[0] : "🔹";
+  }
+
+  function extractText(text) {
+    const emojiRegex = /([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|\uD83E[\uDD00-\uDFFF])/;
+    return text.replace(emojiRegex, "").trim();
+  }
+
+  function showScreen(screenId) {
+    document.querySelectorAll('.screen').forEach(screen => {
+      screen.classList.remove('active');
+    });
+    document.getElementById(screenId).classList.add('active');
+    
+    if (screenId === 'womanScreen' || screenId === 'manScreen') {
+      renderOptions(screenId === 'womanScreen' ? 'womanOptions' : 'manOptions');
+    }
+    // Limpar mensagens de erro/sucesso ao trocar de tela
+    const passwordError = document.getElementById('editPasswordError');
+    const successMsg = document.getElementById('editSuccessMessage');
+    if (passwordError) passwordError.style.display = 'none';
+    if (successMsg) successMsg.style.display = 'none';
+  }
+
+  function renderOptions(containerId) {
+    const container = document.getElementById(containerId);
+    const user = containerId === 'womanOptions' ? 'woman' : 'man';
+    
+    container.innerHTML = ''; // Sempre limpar para refletir possíveis edições nas opções
+      
+    options.forEach((opt) => {
+      const emoji = extractEmoji(opt);
+      const text = extractText(opt);
+      
+      const optionDiv = document.createElement('div');
+      optionDiv.className = 'option-item';
+      
+      const label = document.createElement('label');
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.value = opt;
+      
+      if (selections[user].includes(opt)) {
+        checkbox.checked = true;
+      }
+      
+      checkbox.addEventListener('change', () => updateCount(containerId));
+      
+      const emojiSpan = document.createElement('span');
+      emojiSpan.className = 'emoji';
+      emojiSpan.textContent = emoji;
+      
+      const textSpan = document.createElement('span');
+      textSpan.className = 'choice-text';
+      textSpan.textContent = text;
+      
+      label.appendChild(checkbox);
+      label.appendChild(emojiSpan);
+      label.appendChild(textSpan);
+      optionDiv.appendChild(label);
+      container.appendChild(optionDiv);
+    });
+    
+    updateCount(containerId);
+  }
+
+  function updateCount(containerId) {
+    const checkboxes = document.querySelectorAll(`#${containerId} input[type="checkbox"]:checked`);
+    const count = checkboxes.length;
+    const user = containerId === 'womanOptions' ? 'woman' : 'man';
+    const countDisplay = `${user}Count`;
+    const errorDisplay = `${user}Error`;
+    
+    document.getElementById(countDisplay).textContent = `${count}/5 selecionadas`;
+    document.getElementById(errorDisplay).textContent = ''; // Limpa erro anterior
+
+    if (count > 5) {
+        document.getElementById(errorDisplay).textContent = 'Selecione apenas 5 opções';
+        // Desmarcar o último selecionado se exceder 5
+        let checkedCount = 0;
+        document.querySelectorAll(`#${containerId} input[type="checkbox"]`).forEach(cb => {
+            if (cb.checked) {
+                checkedCount++;
+                if (checkedCount > 5) {
+                    cb.checked = false;
+                }
+            }
+        });
+        // Re-atualiza a contagem
+        const finalCheckboxes = document.querySelectorAll(`#${containerId} input[type="checkbox"]:checked`);
+        document.getElementById(countDisplay).textContent = `${finalCheckboxes.length}/5 selecionadas`;
+        if (finalCheckboxes.length <= 5) {
+            document.getElementById(errorDisplay).textContent = '';
+        }
+    }
+}
+
+
+  function confirmSelection(user) {
+    const containerId = user === 'woman' ? 'womanOptions' : 'manOptions';
+    const checkboxes = document.querySelectorAll(`#${containerId} input[type="checkbox"]:checked`);
+    
+    if (checkboxes.length !== 5) {
+      document.getElementById(`${user}Error`).textContent = 'Por favor, selecione exatamente 5 opções.';
+      return;
+    }
+
+    selections[user] = Array.from(checkboxes).map(cb => cb.value);
+    confirmed[user] = true;
+    
+    document.getElementById(`${user}ButtonGroup`).style.display = 'none';
+    document.getElementById(`${user}BlurOverlay`).style.display = 'flex';
+  }
+
+  function showResults() {
+    const womanContainer = document.getElementById('womanResults');
+    const manContainer = document.getElementById('manResults');
+    
+    womanContainer.innerHTML = '';
+    manContainer.innerHTML = '';
+    
+    const commonChoices = selections.woman.filter(item => selections.man.includes(item));
+    
+    selections.woman.forEach(item => {
+      const emoji = extractEmoji(item);
+      const text = extractText(item);
+      const choiceItem = document.createElement('div');
+      choiceItem.className = 'choice-item';
+      if (commonChoices.includes(item)) choiceItem.classList.add('matching');
+      choiceItem.innerHTML = `<div class="emoji">${emoji}</div><div class="choice-text">${text}</div>`;
+      womanContainer.appendChild(choiceItem);
+    });
+    
+    selections.man.forEach(item => {
+      const emoji = extractEmoji(item);
+      const text = extractText(item);
+      const choiceItem = document.createElement('div');
+      choiceItem.className = 'choice-item';
+      if (commonChoices.includes(item)) choiceItem.classList.add('matching');
+      choiceItem.innerHTML = `<div class="emoji">${emoji}</div><div class="choice-text">${text}</div>`;
+      manContainer.appendChild(choiceItem);
+    });
+    
+    showScreen('resultScreen');
+  }
+
+  function restartGame() {
+    selections = { woman: [], man: [] };
+    confirmed = { woman: false, man: false };
+    
+    document.querySelectorAll('.screen').forEach(screen => {
+      const screenId = screen.id;
+      if (screenId === 'womanScreen' || screenId === 'manScreen') {
+        const user = screenId.replace('Screen', '');
+        // document.getElementById(`${user}Options`).innerHTML = ''; // renderOptions vai cuidar disso
+        document.getElementById(`${user}ButtonGroup`).style.display = 'flex';
+        document.getElementById(`${user}BlurOverlay`).style.display = 'none';
+        document.getElementById(`${user}Error`).textContent = '';
+      }
+    });
+    
+    showScreen('startScreen');
+  }
+
+  // --- Funções para a tela de Edição de Opções ---
+  function showEditOptionsScreen() {
+    renderEditableOptions();
+    showScreen('editOptionsScreen');
+    document.getElementById('adminPassword').value = ''; // Limpa senha
+    document.getElementById('editPasswordError').style.display = 'none';
+    document.getElementById('editSuccessMessage').style.display = 'none';
+  }
+
+  function renderEditableOptions() {
+    const container = document.getElementById('editableOptionsContainer');
+    container.innerHTML = '';
+    options.forEach((opt, index) => {
+      const itemDiv = document.createElement('div');
+      itemDiv.className = 'editable-option-item';
+
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.value = opt;
+      input.dataset.index = index; // Para identificar qual opção está sendo editada/removida
+
+      const removeBtn = document.createElement('button');
+      removeBtn.className = 'btn btn-remove';
+      removeBtn.textContent = 'Remover';
+      removeBtn.onclick = () => removeOptionFromList(index);
+
+      itemDiv.appendChild(input);
+      itemDiv.appendChild(removeBtn);
+      container.appendChild(itemDiv);
+    });
+  }
+
+  function addOptionToList() {
+    const newOptionInput = document.getElementById('newOptionInput');
+    const newOptionValue = newOptionInput.value.trim();
+    if (newOptionValue) {
+      options.push(newOptionValue);
+      newOptionInput.value = ''; // Limpa o campo
+      renderEditableOptions(); // Re-renderiza a lista
+    }
+  }
+
+  function removeOptionFromList(indexToRemove) {
+    options.splice(indexToRemove, 1);
+    renderEditableOptions(); // Re-renderiza a lista
+  }
+
+  function saveEditedOptions() {
+    const passwordInput = document.getElementById('adminPassword');
+    const passwordError = document.getElementById('editPasswordError');
+    const successMsg = document.getElementById('editSuccessMessage');
+
+    passwordError.style.display = 'none';
+    successMsg.style.display = 'none';
+
+    if (passwordInput.value !== ADMIN_PASSWORD) {
+      passwordError.textContent = 'Senha incorreta!';
+      passwordError.style.display = 'block';
+      return;
+    }
+
+    // Atualizar 'options' com os valores dos inputs
+    const updatedOptions = [];
+    const inputs = document.querySelectorAll('#editableOptionsContainer input[type="text"]');
+    inputs.forEach(input => {
+      const value = input.value.trim();
+      if (value) { // Não adiciona opções vazias
+          updatedOptions.push(value);
+      }
+    });
+    options = updatedOptions; // Substitui o array global de opções
+
+    // Resetar seleções e confirmações do jogo, pois as opções mudaram
+    selections = { woman: [], man: [] };
+    confirmed = { woman: false, man: false };
+    // Limpar o conteúdo das opções nas telas de jogo para forçar re-renderização
+    document.getElementById('womanOptions').innerHTML = '';
+    document.getElementById('manOptions').innerHTML = '';
+
+
+    successMsg.textContent = 'Opções salvas com sucesso!';
+    successMsg.style.display = 'block';
+    passwordInput.value = ''; // Limpa senha após sucesso
+
+    renderEditableOptions(); // Re-renderiza para mostrar as opções salvas (especialmente se alguma foi removida por estar vazia)
+
+    // Opcional: pode voltar para a tela inicial após salvar
+    // setTimeout(() => showScreen('startScreen'), 2000); 
+  }
+  
+  function cancelEditOptions() {
+    // Simplesmente volta para a tela inicial. 
+    // Como as adições e remoções alteram 'options' diretamente, 
+    // para um "cancelar" real que desfaz tudo, precisaríamos de uma cópia temporária.
+    // Por ora, "Voltar" não desfaz as edições de adicionar/remover, apenas não salva as edições de texto
+    // se o botão salvar não for pressionado.
+    // Para uma experiência melhor, seria bom recarregar as opções originais se nada foi salvo.
+    // Mas para isso, precisaria de uma cópia no início da edição.
+    // A maneira mais simples para o usuário "cancelar" de fato é recarregar a página.
+    // Ou, ao clicar em Voltar, recarregamos as opções como estavam antes de entrar na tela.
+    // Isso requer que showEditOptionsScreen armazene uma cópia.
+    // Por enquanto, apenas volta:
+    showScreen('startScreen');
+  }
+
+</script>
+
+</body>
+</html>
