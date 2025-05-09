@@ -144,7 +144,7 @@
       box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
     }
 
-    .btn-edit-options, .btn-save-options { /* Renomeado para evitar conflito com .btn-edit usado antes */
+    .btn-edit-options, .btn-save-options {
       background: #ffc107;
       color: #343a40;
       box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3);
@@ -332,13 +332,15 @@
       position: relative;
     }
 
-    input[type="text"], input[type="password"] {
-        width: calc(100% - 22px); /* Ajuste para padding */
+    input[type="text"], input[type="password"], input[type="number"] {
         padding: 10px;
         margin-bottom: 10px;
         border: 1px solid #ced4da;
         border-radius: 5px;
         font-size: 1em;
+    }
+    input[type="text"], input[type="password"] {
+         width: calc(100% - 22px); /* Ajuste para padding */
     }
     .editable-option-item input[type="text"] {
         flex-grow: 1;
@@ -352,6 +354,20 @@
     .add-option-container input[type="text"] {
         flex-grow: 1;
         margin-right: 10px;
+        margin-bottom: 0;
+    }
+    .settings-input-group {
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .settings-input-group label {
+        margin-right: 10px;
+        color: #495057;
+    }
+    .settings-input-group input[type="number"] {
+        width: 70px;
         margin-bottom: 0;
     }
 
@@ -396,6 +412,14 @@
       .add-option-container button {
         width: 100%;
       }
+      .settings-input-group {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .settings-input-group input[type="number"] {
+        width: 100%;
+        margin-top: 5px;
+      }
     }
   </style>
 </head>
@@ -415,10 +439,10 @@
 <div id="womanScreen" class="screen">
   <div class="container">
     <h1>O que você me daria:</h1>
-    <p style="text-align: center; margin-bottom: 20px; color: #6c757d;">Selecione 5 opções que expressam seus sentimentos:</p>
+    <p style="text-align: center; margin-bottom: 20px; color: #6c757d;" id="womanSelectionPrompt">Carregando...</p>
     <div class="options" id="womanOptions"></div>
-    <div class="counter" id="womanCount">0/5 selecionadas</div>
-    <div class="error-message" id="womanError"></div>
+    <div class="counter" id="womanCount">0/X selecionadas</div>
+    <div class="error-message" id="womanError" style="display:none;"></div>
     <div class="button-group" id="womanButtonGroup">
       <button class="btn btn-confirm" onclick="confirmSelection('woman')">Confirmar Escolhas</button>
     </div>
@@ -431,10 +455,10 @@
 <div id="manScreen" class="screen">
   <div class="container">
     <h1>Escolhas do Homem</h1>
-    <p style="text-align: center; margin-bottom: 20px; color: #6c757d;">Selecione 5 opções que expressam seus sentimentos:</p>
+    <p style="text-align: center; margin-bottom: 20px; color: #6c757d;" id="manSelectionPrompt">Carregando...</p>
     <div class="options" id="manOptions"></div>
-    <div class="counter" id="manCount">0/5 selecionadas</div>
-    <div class="error-message" id="manError"></div>
+    <div class="counter" id="manCount">0/X selecionadas</div>
+    <div class="error-message" id="manError" style="display:none;"></div>
     <div class="button-group" id="manButtonGroup">
       <button class="btn btn-confirm" onclick="confirmSelection('man')">Confirmar Escolhas</button>
     </div>
@@ -470,20 +494,33 @@
 <div id="editOptionsScreen" class="screen">
   <div class="container">
     <h1>Editar Opções</h1>
-    <p style="text-align: center; margin-bottom: 20px; color: #6c757d;">Adicione, remova ou modifique as opções do jogo.</p>
+    <p style="text-align: center; margin-bottom: 20px; color: #6c757d;">Adicione, remova ou modifique as opções do jogo e defina os limites de seleção.</p>
     
     <div id="editableOptionsContainer">
       <!-- Opções editáveis serão renderizadas aqui -->
     </div>
 
     <div class="add-option-container">
-      <input type="text" id="newOptionInput" placeholder="Digite a nova opção">
+      <input type="text" id="newOptionInput" placeholder="Digite a nova opção (ex: 🥰 Texto)">
       <button class="btn btn-add" onclick="addOptionToList()">Adicionar</button>
     </div>
     
-    <hr style="margin: 20px 0;">
+    <hr style="margin: 30px 0;">
 
-    <p style="text-align:center; color: #6c757d;">Digite a senha para salvar:</p>
+    <p style="text-align:left; color: #333; font-weight: 500; margin-bottom:15px;">Configurações de Seleção:</p>
+    <div class="settings-input-group">
+        <label for="minSelectionsInput">Mínimo de opções a selecionar:</label>
+        <input type="number" id="minSelectionsInput" min="1">
+    </div>
+    <div class="settings-input-group">
+        <label for="maxSelectionsInput">Máximo de opções a selecionar:</label>
+        <input type="number" id="maxSelectionsInput" min="1">
+    </div>
+    <div class="error-message" id="editSettingsError" style="display:none;"></div>
+
+    <hr style="margin: 30px 0;">
+
+    <p style="text-align:left; color: #333; font-weight: 500; margin-bottom:5px;">Digite a senha para salvar:</p>
     <input type="password" id="adminPassword" placeholder="Senha">
     <div class="error-message" id="editPasswordError" style="display:none;"></div>
     <div class="success-message" id="editSuccessMessage" style="display:none;"></div>
@@ -498,22 +535,14 @@
 
 
 <script>
-  let options = [ // Alterado de const para let
-    "💚 te pegaria agora",
-    "❤️ pegaria todo dia",
-    "💛 penso no caso",
-    "💜 beijaria o seu corpo todo",
-    "🤗 Te abraçaria",
-    "👅 Chupo sua língua",
-    "❤️ Namorava com vc",
-    "💙 Te mordia todinho(a)",
-    "🍏 te adoro",
-    "🥰 amor escondido",
-    "👯‍♀️ amizade colorida",
-    "💋 te beijaria",
-    "👻 Te atormentaria",
-    "🎁 Te dava um presente"
-  ];
+  const ADMIN_PASSWORD = "123";
+  const LS_OPTIONS_KEY = 'jogoEscolhas_options_v1'; // Adicionado _v1 para evitar conflito com versões antigas sem min/max
+  const LS_MIN_SELECTIONS_KEY = 'jogoEscolhas_minSelections_v1';
+  const LS_MAX_SELECTIONS_KEY = 'jogoEscolhas_maxSelections_v1';
+
+  let options = []; // Será carregado do localStorage ou padrão
+  let minSelectionsRequired = 1;
+  let maxSelectionsAllowed = 5;
 
   let selections = {
     woman: [],
@@ -525,7 +554,51 @@
     man: false
   };
 
-  const ADMIN_PASSWORD = "123"; // Senha para salvar
+  // Função para carregar dados do localStorage ou usar padrões
+  function loadSettingsAndOptions() {
+    const storedOptions = localStorage.getItem(LS_OPTIONS_KEY);
+    if (storedOptions) {
+      try {
+        options = JSON.parse(storedOptions);
+      } catch (e) {
+        console.error("Erro ao carregar opções do localStorage:", e);
+        setDefaultOptions(); // Usa padrão se houver erro
+      }
+    } else {
+      setDefaultOptions();
+    }
+
+    const storedMin = localStorage.getItem(LS_MIN_SELECTIONS_KEY);
+    if (storedMin) {
+      minSelectionsRequired = parseInt(storedMin, 10);
+      if (isNaN(minSelectionsRequired) || minSelectionsRequired < 1) minSelectionsRequired = 1;
+    } else {
+      minSelectionsRequired = 1; // Padrão
+    }
+
+    const storedMax = localStorage.getItem(LS_MAX_SELECTIONS_KEY);
+    if (storedMax) {
+      maxSelectionsAllowed = parseInt(storedMax, 10);
+      if (isNaN(maxSelectionsAllowed) || maxSelectionsAllowed < minSelectionsRequired) maxSelectionsAllowed = Math.max(minSelectionsRequired, 5);
+    } else {
+      maxSelectionsAllowed = Math.max(minSelectionsRequired, 5); // Padrão, garantindo max >= min
+    }
+    // Garante que max não seja menor que min, caso dados do LS estejam inconsistentes
+    if (maxSelectionsAllowed < minSelectionsRequired) {
+        maxSelectionsAllowed = minSelectionsRequired;
+    }
+  }
+
+  function setDefaultOptions() {
+    options = [
+      "💚 te pegaria agora", "❤️ pegaria todo dia", "💛 penso no caso",
+      "💜 beijaria o seu corpo todo", "🤗 Te abraçaria", "👅 Chupo sua língua",
+      "❤️ Namorava com vc", "💙 Te mordia todinho(a)", "🍏 te adoro",
+      "🥰 amor escondido", "👯‍♀️ amizade colorida", "💋 te beijaria",
+      "👻 Te atormentaria", "🎁 Te dava um presente"
+    ];
+  }
+
 
   function extractEmoji(text) {
     const emojiRegex = /([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|\uD83E[\uDD00-\uDFFF])/;
@@ -538,27 +611,48 @@
     return text.replace(emojiRegex, "").trim();
   }
 
+  function updateSelectionPrompts() {
+    ['woman', 'man'].forEach(user => {
+      const promptEl = document.getElementById(`${user}SelectionPrompt`);
+      if (promptEl) {
+        if (minSelectionsRequired === maxSelectionsAllowed) {
+            promptEl.textContent = `Selecione ${maxSelectionsAllowed} opções que expressam seus sentimentos:`;
+        } else {
+            promptEl.textContent = `Selecione de ${minSelectionsRequired} a ${maxSelectionsAllowed} opções que expressam seus sentimentos:`;
+        }
+      }
+    });
+  }
+
   function showScreen(screenId) {
     document.querySelectorAll('.screen').forEach(screen => {
       screen.classList.remove('active');
     });
     document.getElementById(screenId).classList.add('active');
     
+    updateSelectionPrompts(); // Atualiza prompts sempre que uma tela é mostrada
+
     if (screenId === 'womanScreen' || screenId === 'manScreen') {
       renderOptions(screenId === 'womanScreen' ? 'womanOptions' : 'manOptions');
     }
-    // Limpar mensagens de erro/sucesso ao trocar de tela
+    if (screenId === 'editOptionsScreen') {
+        document.getElementById('minSelectionsInput').value = minSelectionsRequired;
+        document.getElementById('maxSelectionsInput').value = maxSelectionsAllowed;
+    }
+
     const passwordError = document.getElementById('editPasswordError');
     const successMsg = document.getElementById('editSuccessMessage');
+    const settingsError = document.getElementById('editSettingsError');
     if (passwordError) passwordError.style.display = 'none';
     if (successMsg) successMsg.style.display = 'none';
+    if (settingsError) settingsError.style.display = 'none';
   }
 
   function renderOptions(containerId) {
     const container = document.getElementById(containerId);
     const user = containerId === 'womanOptions' ? 'woman' : 'man';
     
-    container.innerHTML = ''; // Sempre limpar para refletir possíveis edições nas opções
+    container.innerHTML = ''; 
       
     options.forEach((opt) => {
       const emoji = extractEmoji(opt);
@@ -576,7 +670,7 @@
         checkbox.checked = true;
       }
       
-      checkbox.addEventListener('change', () => updateCount(containerId));
+      checkbox.addEventListener('change', () => updateCount(user)); // Passar 'user' em vez de 'containerId'
       
       const emojiSpan = document.createElement('span');
       emojiSpan.className = 'emoji';
@@ -593,36 +687,42 @@
       container.appendChild(optionDiv);
     });
     
-    updateCount(containerId);
+    updateCount(user);
   }
 
-  function updateCount(containerId) {
+  function updateCount(user) {
+    const containerId = `${user}Options`;
     const checkboxes = document.querySelectorAll(`#${containerId} input[type="checkbox"]:checked`);
     const count = checkboxes.length;
-    const user = containerId === 'womanOptions' ? 'woman' : 'man';
-    const countDisplay = `${user}Count`;
-    const errorDisplay = `${user}Error`;
+    const countDisplay = document.getElementById(`${user}Count`);
+    const errorDisplay = document.getElementById(`${user}Error`);
     
-    document.getElementById(countDisplay).textContent = `${count}/5 selecionadas`;
-    document.getElementById(errorDisplay).textContent = ''; // Limpa erro anterior
+    countDisplay.textContent = `${count}/${maxSelectionsAllowed} selecionadas`;
+    errorDisplay.style.display = 'none';
+    errorDisplay.textContent = '';
 
-    if (count > 5) {
-        document.getElementById(errorDisplay).textContent = 'Selecione apenas 5 opções';
-        // Desmarcar o último selecionado se exceder 5
-        let checkedCount = 0;
-        document.querySelectorAll(`#${containerId} input[type="checkbox"]`).forEach(cb => {
-            if (cb.checked) {
-                checkedCount++;
-                if (checkedCount > 5) {
-                    cb.checked = false;
+    if (count > maxSelectionsAllowed) {
+        errorDisplay.textContent = `Selecione no máximo ${maxSelectionsAllowed} opções.`;
+        errorDisplay.style.display = 'block';
+        
+        // Desmarcar os últimos selecionados para ficar dentro do limite
+        const allCheckboxesInOrder = Array.from(document.querySelectorAll(`#${containerId} input[type="checkbox"]`));
+        let currentCheckedCount = count;
+        // Itera de trás para frente nos checkboxes VISÍVEIS, desmarcando os últimos que foram CHECADOS
+        // Para simplificar, vamos desmarcar os últimos da lista que estão checados
+        for (let i = allCheckboxesInOrder.length - 1; i >= 0; i--) {
+            if (allCheckboxesInOrder[i].checked) {
+                if (currentCheckedCount > maxSelectionsAllowed) {
+                    allCheckboxesInOrder[i].checked = false;
+                    currentCheckedCount--;
+                } else {
+                    break;
                 }
             }
-        });
-        // Re-atualiza a contagem
-        const finalCheckboxes = document.querySelectorAll(`#${containerId} input[type="checkbox"]:checked`);
-        document.getElementById(countDisplay).textContent = `${finalCheckboxes.length}/5 selecionadas`;
-        if (finalCheckboxes.length <= 5) {
-            document.getElementById(errorDisplay).textContent = '';
+        }
+        countDisplay.textContent = `${currentCheckedCount}/${maxSelectionsAllowed} selecionadas`;
+        if (currentCheckedCount <= maxSelectionsAllowed) {
+            errorDisplay.style.display = 'none';
         }
     }
 }
@@ -631,11 +731,26 @@
   function confirmSelection(user) {
     const containerId = user === 'woman' ? 'womanOptions' : 'manOptions';
     const checkboxes = document.querySelectorAll(`#${containerId} input[type="checkbox"]:checked`);
+    const selectedCount = checkboxes.length;
+    const errorDisplay = document.getElementById(`${user}Error`);
     
-    if (checkboxes.length !== 5) {
-      document.getElementById(`${user}Error`).textContent = 'Por favor, selecione exatamente 5 opções.';
+    let errorMsg = "";
+    if (minSelectionsRequired === maxSelectionsAllowed) {
+        if (selectedCount !== maxSelectionsAllowed) {
+            errorMsg = `Por favor, selecione exatamente ${maxSelectionsAllowed} opções.`;
+        }
+    } else {
+        if (selectedCount < minSelectionsRequired || selectedCount > maxSelectionsAllowed) {
+            errorMsg = `Por favor, selecione entre ${minSelectionsRequired} e ${maxSelectionsAllowed} opções.`;
+        }
+    }
+
+    if (errorMsg) {
+      errorDisplay.textContent = errorMsg;
+      errorDisplay.style.display = 'block';
       return;
     }
+    errorDisplay.style.display = 'none';
 
     selections[user] = Array.from(checkboxes).map(cb => cb.value);
     confirmed[user] = true;
@@ -680,14 +795,20 @@
     selections = { woman: [], man: [] };
     confirmed = { woman: false, man: false };
     
+    // As opções e configurações (min/max) são carregadas do localStorage, então não resetamos aqui.
+    // Apenas resetamos o estado do jogo atual.
+    
     document.querySelectorAll('.screen').forEach(screen => {
       const screenId = screen.id;
       if (screenId === 'womanScreen' || screenId === 'manScreen') {
         const user = screenId.replace('Screen', '');
-        // document.getElementById(`${user}Options`).innerHTML = ''; // renderOptions vai cuidar disso
         document.getElementById(`${user}ButtonGroup`).style.display = 'flex';
         document.getElementById(`${user}BlurOverlay`).style.display = 'none';
-        document.getElementById(`${user}Error`).textContent = '';
+        const errorDisplay = document.getElementById(`${user}Error`);
+        if(errorDisplay) {
+            errorDisplay.textContent = '';
+            errorDisplay.style.display = 'none';
+        }
       }
     });
     
@@ -697,15 +818,20 @@
   // --- Funções para a tela de Edição de Opções ---
   function showEditOptionsScreen() {
     renderEditableOptions();
-    showScreen('editOptionsScreen');
-    document.getElementById('adminPassword').value = ''; // Limpa senha
+    showScreen('editOptionsScreen'); // showScreen já preenche min/max inputs
+    document.getElementById('adminPassword').value = '';
     document.getElementById('editPasswordError').style.display = 'none';
     document.getElementById('editSuccessMessage').style.display = 'none';
+    document.getElementById('editSettingsError').style.display = 'none';
   }
 
   function renderEditableOptions() {
     const container = document.getElementById('editableOptionsContainer');
     container.innerHTML = '';
+    if (!options || options.length === 0) {
+        container.innerHTML = '<p style="text-align:center; color: #6c757d;">Nenhuma opção cadastrada. Adicione algumas!</p>';
+        return;
+    }
     options.forEach((opt, index) => {
       const itemDiv = document.createElement('div');
       itemDiv.className = 'editable-option-item';
@@ -713,7 +839,7 @@
       const input = document.createElement('input');
       input.type = 'text';
       input.value = opt;
-      input.dataset.index = index; // Para identificar qual opção está sendo editada/removida
+      input.dataset.index = index; 
 
       const removeBtn = document.createElement('button');
       removeBtn.className = 'btn btn-remove';
@@ -730,24 +856,28 @@
     const newOptionInput = document.getElementById('newOptionInput');
     const newOptionValue = newOptionInput.value.trim();
     if (newOptionValue) {
+      if (!options) options = []; // Inicializa se for nulo/undefined
       options.push(newOptionValue);
-      newOptionInput.value = ''; // Limpa o campo
-      renderEditableOptions(); // Re-renderiza a lista
+      newOptionInput.value = ''; 
+      renderEditableOptions(); 
     }
   }
 
   function removeOptionFromList(indexToRemove) {
+    if (!options) return;
     options.splice(indexToRemove, 1);
-    renderEditableOptions(); // Re-renderiza a lista
+    renderEditableOptions(); 
   }
 
   function saveEditedOptions() {
     const passwordInput = document.getElementById('adminPassword');
     const passwordError = document.getElementById('editPasswordError');
     const successMsg = document.getElementById('editSuccessMessage');
+    const settingsError = document.getElementById('editSettingsError');
 
     passwordError.style.display = 'none';
     successMsg.style.display = 'none';
+    settingsError.style.display = 'none';
 
     if (passwordInput.value !== ADMIN_PASSWORD) {
       passwordError.textContent = 'Senha incorreta!';
@@ -755,49 +885,71 @@
       return;
     }
 
+    // Validar e pegar Min/Max
+    const newMin = parseInt(document.getElementById('minSelectionsInput').value, 10);
+    const newMax = parseInt(document.getElementById('maxSelectionsInput').value, 10);
+
+    if (isNaN(newMin) || isNaN(newMax) || newMin < 1 || newMax < newMin) {
+        settingsError.textContent = 'Valores de Mínimo/Máximo inválidos. Mínimo deve ser >= 1 e Máximo deve ser >= Mínimo.';
+        settingsError.style.display = 'block';
+        return;
+    }
+
     // Atualizar 'options' com os valores dos inputs
     const updatedOptions = [];
     const inputs = document.querySelectorAll('#editableOptionsContainer input[type="text"]');
     inputs.forEach(input => {
       const value = input.value.trim();
-      if (value) { // Não adiciona opções vazias
+      if (value) { 
           updatedOptions.push(value);
       }
     });
-    options = updatedOptions; // Substitui o array global de opções
+    options = updatedOptions; 
 
-    // Resetar seleções e confirmações do jogo, pois as opções mudaram
+    // Atualizar min/max globais
+    minSelectionsRequired = newMin;
+    maxSelectionsAllowed = newMax;
+
+    // Salvar no localStorage
+    try {
+        localStorage.setItem(LS_OPTIONS_KEY, JSON.stringify(options));
+        localStorage.setItem(LS_MIN_SELECTIONS_KEY, minSelectionsRequired.toString());
+        localStorage.setItem(LS_MAX_SELECTIONS_KEY, maxSelectionsAllowed.toString());
+    } catch (e) {
+        console.error("Erro ao salvar no localStorage:", e);
+        settingsError.textContent = 'Erro ao salvar. Verifique o console para detalhes.';
+        settingsError.style.display = 'block';
+        return;
+    }
+    
+
     selections = { woman: [], man: [] };
     confirmed = { woman: false, man: false };
-    // Limpar o conteúdo das opções nas telas de jogo para forçar re-renderização
     document.getElementById('womanOptions').innerHTML = '';
     document.getElementById('manOptions').innerHTML = '';
 
 
-    successMsg.textContent = 'Opções salvas com sucesso!';
+    successMsg.textContent = 'Opções e configurações salvas com sucesso!';
     successMsg.style.display = 'block';
-    passwordInput.value = ''; // Limpa senha após sucesso
+    passwordInput.value = ''; 
 
-    renderEditableOptions(); // Re-renderiza para mostrar as opções salvas (especialmente se alguma foi removida por estar vazia)
-
-    // Opcional: pode voltar para a tela inicial após salvar
-    // setTimeout(() => showScreen('startScreen'), 2000); 
+    renderEditableOptions(); 
+    updateSelectionPrompts(); // Atualiza os prompts nas telas de jogo
   }
   
   function cancelEditOptions() {
-    // Simplesmente volta para a tela inicial. 
-    // Como as adições e remoções alteram 'options' diretamente, 
-    // para um "cancelar" real que desfaz tudo, precisaríamos de uma cópia temporária.
-    // Por ora, "Voltar" não desfaz as edições de adicionar/remover, apenas não salva as edições de texto
-    // se o botão salvar não for pressionado.
-    // Para uma experiência melhor, seria bom recarregar as opções originais se nada foi salvo.
-    // Mas para isso, precisaria de uma cópia no início da edição.
-    // A maneira mais simples para o usuário "cancelar" de fato é recarregar a página.
-    // Ou, ao clicar em Voltar, recarregamos as opções como estavam antes de entrar na tela.
-    // Isso requer que showEditOptionsScreen armazene uma cópia.
-    // Por enquanto, apenas volta:
+    // Recarregar as opções e configurações do localStorage para descartar mudanças não salvas
+    loadSettingsAndOptions(); 
     showScreen('startScreen');
   }
+
+  // --- Inicialização ---
+  document.addEventListener('DOMContentLoaded', () => {
+    loadSettingsAndOptions(); // Carrega tudo do localStorage ou define padrões
+    updateSelectionPrompts(); // Configura os prompts iniciais
+    // A tela inicial é 'startScreen' por padrão no HTML,
+    // se precisasse ir para outra, chamaria showScreen() aqui.
+  });
 
 </script>
 
